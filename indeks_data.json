@@ -1,0 +1,14 @@
+[
+  {
+    "nama": "Data Toko A",
+    "url": "https://raw.githubusercontent.com/keysa191/hasil/refs/heads/main/datasg"
+  },
+  {
+    "nama": "Data Toko B (Lengkap)",
+    "url": "https://gist.githubusercontent.com/username/def/raw/toko_b.txt"
+  },
+  {
+    "nama": "Data Uji Coba Pribadi",
+    "url": "https://gist.githubusercontent.com/username/ghi/raw/data_uji.txt"
+  }
+]
