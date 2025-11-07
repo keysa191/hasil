@@ -94,7 +94,10 @@ def scrape_static_table(source_config):
 
 
 def update_github_file(source_config, new_content):
-    """Mengupdate file spesifik di repositori GitHub."""
+    """
+    Mengupdate file di repositori GitHub dengan MENAMBAHKAN data baru di atas.
+    Jika file belum ada, akan dibuat baru.
+    """
     if not GITHUB_TOKEN:
         print("ERROR: GH_PAT token tidak diatur.")
         return
@@ -104,23 +107,44 @@ def update_github_file(source_config, new_content):
         repo = g.get_repo(GITHUB_REPO)
         file_path = source_config['target_file']
         
-        print(f"DEBUG: Mencoba mengupdate file '{file_path}' di GitHub...")
         try:
+            # Coba dapatkan file yang sudah ada
             file = repo.get_contents(file_path)
+            old_content = file.decoded_content.decode().strip()
+            
+            # Cek apakah data baru sudah ada untuk menghindari duplikat
+            if new_content in old_content:
+                print(f"INFO: Data baru '{new_content}' sudah ada di file '{file_path}'. Tidak ada update.")
+                return
+
+            # Tambahkan data baru di atas
+            final_content = f"{new_content}\n{old_content}"
+            commit_message = f"Append {source_config['name']}: {new_content}"
+
             repo.update_file(
                 path=file_path,
-                message=f"Update {source_config['name']}: {new_content}",
-                content=new_content,
+                message=commit_message,
+                content=final_content,
                 sha=file.sha
             )
-            print(f"SUCCESS: File '{file_path}' berhasil diupdate.")
-        except:
-            repo.create_file(
-                path=file_path,
-                message=f"Create {source_config['name']}: {new_content}",
-                content=new_content
-            )
-            print(f"SUCCESS: File '{file_path}' berhasil dibuat.")
+            print(f"SUCCESS: File '{file_path}' berhasil diupdate dengan data baru di baris pertama.")
+
+        except Exception as e:
+            # Jika file tidak ditemukan (error 404), buat file baru
+            if "Not Found" in str(e):
+                print(f"INFO: File '{file_path}' tidak ditemukan. Membuat file baru.")
+                final_content = new_content
+                commit_message = f"Create {source_config['name']}: {new_content}"
+                
+                repo.create_file(
+                    path=file_path,
+                    message=commit_message,
+                    content=final_content
+                )
+                print(f"SUCCESS: File '{file_path}' berhasil dibuat dengan data awal.")
+            else:
+                # Jika ada error lain saat mengambil file
+                raise e
 
     except Exception as e:
         print(f"ERROR: Gagal mengupdate file di GitHub: {e}")
