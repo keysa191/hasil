@@ -3,17 +3,19 @@
 
 # Konfigurasi untuk multiple data sources dengan API
 
+# Konfigurasi untuk multiple data sources dengan data di dalam script
+
 - name: "SDP"
   url: "https://srv1.scanangka.blog/keluaranharian?pasaran=sydney"
   target_file: "datasdp"
-  scraper_type: "scanangka_api"
-  api_pasaran: "sydney"
+  scraper_type: "embedded_script" # Tipe scraper baru
+  search_keyword: "sydney" # Kata kunci unik untuk menemukan script yang benar
 
 - name: "HK"
   url: "https://srv1.scanangka.blog/keluaranharian?pasaran=hongkong"
   target_file: "datahkp"
-  scraper_type: "scanangka_api"
-  api_pasaran: "hongkong"
+  scraper_type: "embedded_script"
+  search_keyword: "hongkong"
 
 # Untuk menambah sumber baru, cukup tambahkan blok dengan scraper_type "scanangka_api"
 # dan sesuaikan api_pasaran-nya.
