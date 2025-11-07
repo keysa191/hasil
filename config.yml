@@ -12,9 +12,24 @@
   target_file: "datasdp"
   scraper_type: "static_table" # Kembali ke tipe scraper HTML biasa
 
+- name: "SG"
+  url: "https://srv1.scanangka.blog/keluaranharian?pasaran=singapore"
+  target_file: "datasg"
+  scraper_type: "static_table"
+
 - name: "HK"
   url: "https://srv1.scanangka.blog/keluaranharian?pasaran=hongkong"
   target_file: "datahkp"
+  scraper_type: "static_table"
+
+- name: "mq21"
+  url: "https://srv1.scanangka.blog/keluaranharian?pasaran=morocco%20quatro%2021:00"
+  target_file: "mq21"
+  scraper_type: "static_table"
+
+- name: "mq00"
+  url: "https://srv1.scanangka.blog/keluaranharian?pasaran=morocco%20quatro%2000:00"
+  target_file: "mq00"
   scraper_type: "static_table"
 
 # Untuk menambah sumber baru, cukup tambahkan blok dengan scraper_type "scanangka_api"
