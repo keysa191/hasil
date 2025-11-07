@@ -104,7 +104,9 @@ def update_github_file(source_config, new_content):
         return
 
     try:
-         g = Github(auth=github.Auth.Token(GITHUB_TOKEN))
+        # --- PERUBAHAN DI SINI ---
+        g = Github(auth=github.Auth.Token(GITHUB_TOKEN))
+        
         repo = g.get_repo(GITHUB_REPO)
         file_path = source_config['target_file']
         
