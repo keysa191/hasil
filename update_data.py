@@ -6,8 +6,8 @@ import requests
 import yaml
 from bs4 import BeautifulSoup
 from github import Github
+import github.Auth # <-- Untuk menghilangkan warning
 import traceback
-import github.Auth
 
 # --- KONFIGURASI UTAMA ---
 CONFIG_FILE = "config.yml"
@@ -84,7 +84,10 @@ def scrape_static_table(source_config):
         angka_list = [span.text for span in result_spans]
         angka_str = ' '.join(angka_list)
 
-        formatted_output = f"{tanggal} {hari} {angka_str}"
+        # --- PERUBAHAN FORMAT DI SINI ---
+        # Menggunakan \t untuk membuat tab sebagai pemisah
+        formatted_output = f"{tanggal}\t{hari}\t{angka_str}"
+        
         print(f"SUCCESS: Data berhasil di-scrape dari tabel: {formatted_output}")
         return formatted_output
 
@@ -104,7 +107,7 @@ def update_github_file(source_config, new_content):
         return
 
     try:
-        # --- PERUBAHAN DI SINI ---
+        # Menggunakan cara baru untuk menghilangkan warning
         g = Github(auth=github.Auth.Token(GITHUB_TOKEN))
         
         repo = g.get_repo(GITHUB_REPO)
