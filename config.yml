@@ -4,14 +4,14 @@
 # Konfigurasi untuk multiple data sources dengan API
 
 - name: "SDP"
-  url: "https://srv1.scanangka.blog/keluaranharian?pasaran=sydney" # URL tetap diperlukan untuk referensi
+  url: "https://srv1.scanangka.blog/keluaranharian?pasaran=sydney"
   target_file: "datasdp"
-  scraper_type: "scanangka_api" # Tipe scraper baru
-  api_pasaran: "sydney" # Parameter untuk dikirim ke API
+  scraper_type: "scanangka_api"
+  api_pasaran: "sydney"
 
 - name: "HK"
   url: "https://srv1.scanangka.blog/keluaranharian?pasaran=hongkong"
-  target_file: "datahk"
+  target_file: "datahkp"
   scraper_type: "scanangka_api"
   api_pasaran: "hongkong"
 
