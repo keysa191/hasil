@@ -1,15 +1,22 @@
 # Konfigurasi untuk multiple data sources
 # Setiap item di bawah adalah satu sumber data yang akan di-scrape dan diupdate.
 
-- name: "SDP"  # Nama untuk identifikasi (opsional)
-  url: "https://srv1.scanangka.blog/keluaranharian?pasaran=sydney" # Ganti dengan URL asli
-  target_file: "datasdp" # File yang akan diupdate di repo
-  scraper_type: "default" # Tipe scraper yang akan digunakan di skrip Python
+# Konfigurasi untuk multiple data sources dengan API
 
-- name: "HK" # Contoh untuk data Hongkong
-  url: "https://srv1.scanangka.blog/keluaranharian?pasaran=hongkong" # Ganti dengan URL asli
-  target_file: "datahkp.txt" # File yang akan diupdate di repo
-  scraper_type: "default" # Saat ini kita gunakan tipe yang sama, bisa dikembangkan
+- name: "SDP"
+  url: "https://srv1.scanangka.blog/keluaranharian?pasaran=sydney" # URL tetap diperlukan untuk referensi
+  target_file: "datasdp"
+  scraper_type: "scanangka_api" # Tipe scraper baru
+  api_pasaran: "sydney" # Parameter untuk dikirim ke API
+
+- name: "HK"
+  url: "https://srv1.scanangka.blog/keluaranharian?pasaran=hongkong"
+  target_file: "datahk"
+  scraper_type: "scanangka_api"
+  api_pasaran: "hongkong"
+
+# Untuk menambah sumber baru, cukup tambahkan blok dengan scraper_type "scanangka_api"
+# dan sesuaikan api_pasaran-nya.
 
 # Untuk menambah sumber data baru, cukup salin salah satu blok di atas
 # dan sesuaikan name, url, dan target_file.
