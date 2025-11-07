@@ -1,32 +1,3 @@
-import os
-import requests
-import yaml
-from bs4 import BeautifulSoup
-from github import Github
-import traceback
-
-# --- KONFIGURASI UTAMA ---
-CONFIG_FILE = "config.yml"
-GITHUB_REPO = "keysa191/hasil"
-GITHUB_TOKEN = os.environ.get("GH_PAT")
-
-
-def load_config():
-    """Memuat konfigurasi dari file YAML."""
-    print("DEBUG: Mencoba memuat file konfigurasi...")
-    try:
-        with open(CONFIG_FILE, 'r') as f:
-            config = yaml.safe_load(f)
-        print("DEBUG: File konfigurasi berhasil dimuat dan di-parse.")
-        return config
-    except FileNotFoundError:
-        print(f"ERROR: File konfigurasi '{CONFIG_FILE}' tidak ditemukan.")
-        return None
-    except yaml.YAMLError as e:
-        print(f"ERROR: Gagal parsing file YAML. Periksa indentasi dan sintaks. Detail error: {e}")
-        return None
-
-
 def scrape_static_table(source_config):
     """
     Fungsi untuk scraping data dari tabel HTML statis.
@@ -46,25 +17,14 @@ def scrape_static_table(source_config):
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
         
-        # --- LANGKAH KRUSIAL DEBUGGING ---
-        # Cetak 1000 karakter pertama dari HTML yang diterima untuk memeriksa isinya
-        print(f"DEBUG: HTML yang diterima (1000 karakter pertama):\n{response.text[:1000]}\n---")
-        
         soup = BeautifulSoup(response.content, 'html.parser')
         
-        # Cari tabel berdasarkan ID
-        table = soup.find('table', {'id': 'DataTables_Table_0'})
+        # --- PERUBAHAN DI SINI ---
+        # Cari tabel berdasarkan class, bukan ID
+        table = soup.find('table', class_='liveresult')
         
         if not table:
-            print(f"ERROR: Tabel dengan id 'DataTables_Table_0' tidak ditemukan.")
-            # Jika tabel tidak ditemukan, cari semua tabel di halaman dan laporkan ID-nya
-            all_tables = soup.find_all('table')
-            print(f"DEBUG: Ditemukan {len(all_tables)} tabel di halaman. Berikut detailnya:")
-            if not all_tables:
-                print("DEBUG: Sama sekali tidak ada tag <table> di halaman.")
-            else:
-                for i, t in enumerate(all_tables):
-                    print(f"  - Tabel #{i+1}: ID='{t.get('id')}', Class='{t.get('class')}'")
+            print(f"ERROR: Tabel dengan class 'liveresult' tidak ditemukan.")
             return None
 
         # Ambil baris pertama di dalam tbody (hasil terbaru)
@@ -103,70 +63,3 @@ def scrape_static_table(source_config):
         print(f"ERROR: Terjadi error tak terduga saat scraping: {e}")
         traceback.print_exc()
         return None
-
-
-def update_github_file(source_config, new_content):
-    """Mengupdate file spesifik di repositori GitHub."""
-    if not GITHUB_TOKEN:
-        print("ERROR: GH_PAT token tidak diatur.")
-        return
-
-    try:
-        g = Github(GITHUB_TOKEN)
-        repo = g.get_repo(GITHUB_REPO)
-        file_path = source_config['target_file']
-        
-        print(f"DEBUG: Mencoba mengupdate file '{file_path}' di GitHub...")
-        try:
-            file = repo.get_contents(file_path)
-            repo.update_file(
-                path=file_path,
-                message=f"Update {source_config['name']}: {new_content}",
-                content=new_content,
-                sha=file.sha
-            )
-            print(f"SUCCESS: File '{file_path}' berhasil diupdate.")
-        except:
-            repo.create_file(
-                path=file_path,
-                message=f"Create {source_config['name']}: {new_content}",
-                content=new_content
-            )
-            print(f"SUCCESS: File '{file_path}' berhasil dibuat.")
-
-    except Exception as e:
-        print(f"ERROR: Gagal mengupdate file di GitHub: {e}")
-        traceback.print_exc()
-
-
-# --- EKSEKUSI UTAMA ---
-if __name__ == "__main__":
-    print("--- DEBUG: Script dimulai ---")
-    try:
-        sources = load_config()
-        if not sources:
-            print("DEBUG: Skrip dihentikan karena load_config() mengembalikan None.")
-        else:
-            print(f"DEBUG: Konfigurasi valid. Menemukan {len(sources)} sumber data.")
-            for source in sources:
-                print(f"\n--- Memproses sumber: {source.get('name', 'Tanpa Nama')} ---")
-                
-                scraper_type = source.get('scraper_type')
-                latest_data = None
-
-                if scraper_type == 'static_table':
-                    latest_data = scrape_static_table(source)
-                else:
-                    print(f"WARNING: Scraper type '{scraper_type}' tidak dikenal. Lewati.")
-                    continue
-
-                if latest_data:
-                    update_github_file(source, latest_data)
-                else:
-                    print(f"INFO: Tidak ada data yang berhasil di-scrape untuk sumber ini.")
-            
-            print("\n--- DEBUG: Semua proses selesai. ---")
-    except Exception as e:
-        print(f"\nCRITICAL ERROR: Terjadi error tak terduga di level utama skrip!")
-        print(f"Error: {e}")
-        traceback.print_exc()
