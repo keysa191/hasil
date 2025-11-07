@@ -1,9 +1,11 @@
 import os
 import requests
 import yaml
+import json # Diperlukan untuk parsing data dari script
+import re # Diperlukan untuk mencari pola data
 from bs4 import BeautifulSoup
 from github import Github
-import traceback # Impor traceback untuk melihat detail error
+import traceback
 
 # --- KONFIGURASI UTAMA ---
 CONFIG_FILE = "config.yml"
@@ -27,70 +29,92 @@ def load_config():
         return None
 
 
-def scrape_scanangka_api(source_config):
-    """(Fungsi ini tidak diubah, hanya menambah print untuk debugging)"""
+def scrape_embedded_script(source_config):
+    """
+    Fungsi untuk scraping data yang ada di dalam tag <script>.
+    Ini digunakan ketika tidak ada API yang jelas.
+    """
     try:
-        api_url = "https://srv1.scanangka.blog/ajax/getresult"
-        pasaran = source_config['api_pasaran']
-        main_page_url = source_config['url']
-        
-        session = requests.Session()
-        session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        })
+        url = source_config['url']
+        search_keyword = source_config.get('search_keyword')
 
-        print(f"DEBUG: Mengunjungi halaman utama untuk dapat session: {main_page_url}")
-        response = session.get(main_page_url, timeout=10)
-        response.raise_for_status()
-        
-        api_headers = {
-            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-            'X-Requested-With': 'XMLHttpRequest',
-            'Referer': main_page_url
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
         
-        payload = { 'pasaran': pasaran }
+        print(f"DEBUG: Mengunduh halaman: {url}")
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
         
-        print(f"DEBUG: Memanggil API untuk pasaran: {pasaran}")
-        api_response = session.post(api_url, data=payload, headers=api_headers, timeout=10)
-        api_response.raise_for_status()
+        soup = BeautifulSoup(response.content, 'html.parser')
         
-        data_json = api_response.json()
+        # Cari semua tag <script>
+        scripts = soup.find_all('script')
+        target_script_content = None
         
-        if not data_json.get('data') or len(data_json['data']) == 0:
-            print(f"ERROR: Tidak ada data diterima dari API.")
+        print(f"DEBUG: Mencari script yang mengandung keyword '{search_keyword}'...")
+        for script in scripts:
+            if script.string and search_keyword in script.string:
+                target_script_content = script.string
+                break
+        
+        if not target_script_content:
+            print(f"ERROR: Tidak menemukan script yang mengandung keyword '{search_keyword}'.")
+            return None
+
+        # Sekarang kita perlu parsing data dari string JavaScript.
+        # Kita asumsikan data dalam format array JSON.
+        # Contoh: var data = [["tanggal", "hari", "result_html"], ...];
+        
+        # Cari pola array 2D di dalam string
+        # Pola: [[...],[...],...] yang diikuti oleh ;
+        match = re.search(r'(\[\[.*?\]\])', target_script_content, re.DOTALL)
+        
+        if not match:
+            print(f"ERROR: Tidak dapat menemukan pola array data di dalam script.")
             return None
             
-        first_row_data = data_json['data'][0]
+        data_string = match.group(1)
+        
+        # Ubah string menjadi list Python
+        # Ganti single quote dengan double quote agar valid JSON
+        data_string = data_string.replace("'", '"')
+        data_list = json.loads(data_string)
+        
+        if not data_list or len(data_list) == 0:
+            print(f"ERROR: Array data kosong.")
+            return None
+            
+        # Ambil baris pertama (hasil terbaru)
+        first_row_data = data_list[0]
+        
         tanggal = first_row_data[0].strip()
         hari = first_row_data[1].strip()
         result_html = first_row_data[2]
         
-        soup = BeautifulSoup(result_html, 'html.parser')
-        result_spans = soup.find_all('span', class_='bolaresultmodif')
+        # Gunakan BeautifulSoup untuk mengekstrak angka dari HTML result
+        soup_result = BeautifulSoup(result_html, 'html.parser')
+        result_spans = soup_result.find_all('span', class_='bolaresultmodif')
         
         if not result_spans:
-            print(f"ERROR: Tag span result tidak ditemukan di response API.")
+            print(f"ERROR: Tag span result tidak ditemukan di data script.")
             return None
             
         angka_list = [span.text for span in result_spans]
         angka_str = ' '.join(angka_list)
 
         formatted_output = f"{tanggal} {hari} {angka_str}"
-        print(f"SUCCESS: Data berhasil di-scrape dari API: {formatted_output}")
+        print(f"SUCCESS: Data berhasil di-scrape dari script: {formatted_output}")
         return formatted_output
 
-    except requests.exceptions.RequestException as e:
-        print(f"ERROR: Gagal memanggil API: {e}")
-        return None
     except Exception as e:
-        print(f"ERROR: Terjadi error tak terduga saat parsing API: {e}")
-        traceback.print_exc() # Cetak detail error
+        print(f"ERROR: Terjadi error tak terduga saat scraping dari script: {e}")
+        traceback.print_exc()
         return None
 
 
 def update_github_file(source_config, new_content):
-    """(Fungsi ini tidak diubah, hanya menambah print untuk debugging)"""
+    """Mengupdate file spesifik di repositori GitHub."""
     if not GITHUB_TOKEN:
         print("ERROR: GH_PAT token tidak diatur.")
         return
@@ -138,8 +162,8 @@ if __name__ == "__main__":
                 scraper_type = source.get('scraper_type')
                 latest_data = None
 
-                if scraper_type == 'scanangka_api':
-                    latest_data = scrape_scanangka_api(source)
+                if scraper_type == 'embedded_script':
+                    latest_data = scrape_embedded_script(source)
                 else:
                     print(f"WARNING: Scraper type '{scraper_type}' tidak dikenal. Lewati.")
                     continue
