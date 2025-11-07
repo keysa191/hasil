@@ -1,119 +1,137 @@
 import os
 import requests
+import yaml # Library untuk membaca file YAML
 from bs4 import BeautifulSoup
 from github import Github
 
-# --- KONFIGURASI ---
-# 1. URL halaman web yang ingin Anda scrap. ANDA HARUS MENGISI INI.
-URL_TO_SCRAPE = "https://srv1.scanangka.blog/keluaranharian?pasaran=sydney" 
+# --- KONFIGURASI UTAMA ---
+# 1. Path ke file konfigurasi
+CONFIG_FILE = "config.yml"
 
 # 2. Nama repositori Anda (format: 'pemilik/repo')
 GITHUB_REPO = "keysa191/hasil"
 
-# 3. Path file yang akan diupdate di repositori
-GITHUB_FILE_PATH = "datasdp"
-
-# 4. Personal Access Token (PAT) Anda. Akan diambil dari secret GitHub Actions.
-#    JANGAN Hardcode token di sini!
+# 3. Personal Access Token (PAT). Akan diambil dari secret GitHub Actions.
 GITHUB_TOKEN = os.environ.get("GH_PAT")
 
 
-def scrape_latest_result():
+def load_config():
+    """Memuat konfigurasi dari file YAML."""
+    try:
+        with open(CONFIG_FILE, 'r') as f:
+            config = yaml.safe_load(f)
+        return config
+    except FileNotFoundError:
+        print(f"Error: File konfigurasi '{CONFIG_FILE}' tidak ditemukan.")
+        return None
+    except yaml.YAMLError as e:
+        print(f"Error parsing file YAML: {e}")
+        return None
+
+
+def scrape_default(source_config):
     """
-    Fungsi untuk melakukan scraping data terbaru dari URL yang ditentukan.
-    Mengembalikan string dengan format "tanggal hari x x x x" atau None jika gagal.
+    Fungsi scraping default (seperti yang Anda minta sebelumnya).
+    Mencari tabel dengan id 'DataTables_Table_0' dan memformatnya.
     """
     try:
-        # Mengambil konten halaman
-        response = requests.get(URL_TO_SCRAPE, timeout=10)
-        response.raise_for_status()  # Memastikan request berhasil
-
-        # Parsing HTML
+        url = source_config['url']
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
         soup = BeautifulSoup(response.content, 'html.parser')
 
-        # Menemukan tabel berdasarkan ID
+        # Selector spesifik untuk tabel Anda
         table = soup.find('table', {'id': 'DataTables_Table_0'})
         if not table:
-            print("Error: Tabel dengan id 'DataTables_Table_0' tidak ditemukan.")
+            print(f"Error: Tabel dengan id 'DataTables_Table_0' tidak ditemukan di {url}")
             return None
 
-        # Mengambil baris pertama di dalam tbody (hasil terbaru)
         first_row = table.find('tbody').find('tr')
         if not first_row:
-            print("Error: Tidak ada baris data (tr) di dalam tbody.")
+            print(f"Error: Tidak ada baris data di dalam tbody di {url}")
             return None
 
-        # Mengambil sel-sel (td) dari baris tersebut
         cells = first_row.find_all('td')
         if len(cells) < 3:
-            print("Error: Struktur baris tidak sesuai, kurang dari 3 kolom.")
+            print(f"Error: Struktur baris tidak sesuai di {url}")
             return None
 
-        # 1. Ekstrak Tanggal
         tanggal = cells[0].text.strip()
-
-        # 2. Ekstrak Hari
         hari = cells[1].text.strip()
-
-        # 3. Ekstrak Angka Result
+        
         result_spans = cells[2].find_all('span', class_='bolaresultmodif')
         if not result_spans:
-            print("Error: Tag span dengan class 'bolaresultmodif' tidak ditemukan.")
+            print(f"Error: Tag span result tidak ditemukan di {url}")
             return None
         
         angka_list = [span.text for span in result_spans]
         angka_str = ' '.join(angka_list)
 
-        # Format output sesuai permintaan
         formatted_output = f"{tanggal} {hari} {angka_str}"
-        print(f"Data berhasil di-scrape: {formatted_output}")
+        print(f"[{source_config['name']}] Data berhasil di-scrape: {formatted_output}")
         return formatted_output
 
     except requests.exceptions.RequestException as e:
-        print(f"Error saat mengambil URL: {e}")
+        print(f"[{source_config['name']}] Error saat mengambil URL: {e}")
         return None
     except Exception as e:
-        print(f"Terjadi error tak terduga saat scraping: {e}")
+        print(f"[{source_config['name']}] Terjadi error tak terduga: {e}")
         return None
 
 
-def update_github_file(new_content):
-    """
-    Fungsi untuk mengupdate file di repositori GitHub menggunakan GitHub API.
-    """
+def update_github_file(source_config, new_content):
+    """Mengupdate file spesifik di repositori GitHub."""
     if not GITHUB_TOKEN:
         print("Error: GH_PAT token tidak diatur. Tidak bisa mengupdate GitHub.")
         return
 
     try:
-        # Inisialisasi koneksi ke GitHub
         g = Github(GITHUB_TOKEN)
         repo = g.get_repo(GITHUB_REPO)
-
-        # Dapatkan file yang akan diupdate
-        file = repo.get_contents(GITHUB_FILE_PATH)
+        file_path = source_config['target_file']
         
-        # Update file dengan konten baru
-        # Pesan commit akan otomatis menggunakan tanggal yang di-scrape
-        commit_message = f"Update data hasil: {new_content}"
-        repo.update_file(
-            path=GITHUB_FILE_PATH,
-            message=commit_message,
-            content=new_content,
-            sha=file.sha
-        )
-        print(f"File '{GITHUB_FILE_PATH}' di repositori '{GITHUB_REPO}' berhasil diupdate.")
-        print(f"Link commit: https://github.com/{GITHUB_REPO}/commits/main")
+        # Cek apakah file ada, jika tidak, buat baru
+        try:
+            file = repo.get_contents(file_path)
+            repo.update_file(
+                path=file_path,
+                message=f"Update {source_config['name']}: {new_content}",
+                content=new_content,
+                sha=file.sha
+            )
+            print(f"[{source_config['name']}] File '{file_path}' berhasil diupdate.")
+        except:
+            # Jika file tidak ditemukan (404 error), buat file baru
+            repo.create_file(
+                path=file_path,
+                message=f"Create {source_config['name']}: {new_content}",
+                content=new_content
+            )
+            print(f"[{source_config['name']}] File '{file_path}' berhasil dibuat.")
 
     except Exception as e:
-        print(f"Gagal mengupdate file di GitHub: {e}")
+        print(f"[{source_config['name']}] Gagal mengupdate file di GitHub: {e}")
 
 
 # --- EKSEKUSI UTAMA ---
 if __name__ == "__main__":
-    if URL_TO_SCRAPE == "URL_HALAMAN_WEB_ANDA_DISINI":
-        print("Error: Silakan ganti 'URL_HALAMAN_WEB_ANDA_DISINI' dengan URL yang benar di dalam skrip.")
+    sources = load_config()
+    if not sources:
+        print("Skrip dihentikan karena tidak ada konfigurasi yang valid.")
     else:
-        latest_data = scrape_latest_result()
-        if latest_data:
-            update_github_file(latest_data)
+        print(f"Menemukan {len(sources)} sumber data untuk diproses.")
+        for source in sources:
+            print(f"\n--- Memproses sumber: {source.get('name', 'Tanpa Nama')} ---")
+            
+            # Di sini Anda bisa menambahkan logika if/elif untuk memilih scraper
+            # berdasarkan source['scraper_type']
+            if source.get('scraper_type') == 'default':
+                latest_data = scrape_default(source)
+            else:
+                print(f"Scraper type '{source.get('scraper_type')}' tidak dikenal. Lewati.")
+                continue
+
+            if latest_data:
+                update_github_file(source, latest_data)
+        
+        print("\n--- Semua proses selesai. ---")
