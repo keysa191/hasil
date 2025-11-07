@@ -1,8 +1,6 @@
 import os
 import requests
 import yaml
-import json # Diperlukan untuk parsing data dari script
-import re # Diperlukan untuk mencari pola data
 from bs4 import BeautifulSoup
 from github import Github
 import traceback
@@ -29,86 +27,80 @@ def load_config():
         return None
 
 
-def scrape_embedded_script(source_config):
+def scrape_static_table(source_config):
     """
-    Fungsi untuk scraping data yang ada di dalam tag <script>.
-    Ini digunakan ketika tidak ada API yang jelas.
+    Fungsi untuk scraping data dari tabel HTML statis.
+    Ini adalah pendekatan yang paling andal jika data sudah ada di HTML.
     """
     try:
         url = source_config['url']
-        search_keyword = source_config.get('search_keyword')
-
+        
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Referer': 'https://www.google.com/'
         }
         
         print(f"DEBUG: Mengunduh halaman: {url}")
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
         
+        # --- LANGKAH KRUSIAL DEBUGGING ---
+        # Cetak 1000 karakter pertama dari HTML yang diterima untuk memeriksa isinya
+        print(f"DEBUG: HTML yang diterima (1000 karakter pertama):\n{response.text[:1000]}\n---")
+        
         soup = BeautifulSoup(response.content, 'html.parser')
         
-        # Cari semua tag <script>
-        scripts = soup.find_all('script')
-        target_script_content = None
+        # Cari tabel berdasarkan ID
+        table = soup.find('table', {'id': 'DataTables_Table_0'})
         
-        print(f"DEBUG: Mencari script yang mengandung keyword '{search_keyword}'...")
-        for script in scripts:
-            if script.string and search_keyword in script.string:
-                target_script_content = script.string
-                break
-        
-        if not target_script_content:
-            print(f"ERROR: Tidak menemukan script yang mengandung keyword '{search_keyword}'.")
+        if not table:
+            print(f"ERROR: Tabel dengan id 'DataTables_Table_0' tidak ditemukan.")
+            # Jika tabel tidak ditemukan, cari semua tabel di halaman dan laporkan ID-nya
+            all_tables = soup.find_all('table')
+            print(f"DEBUG: Ditemukan {len(all_tables)} tabel di halaman. Berikut detailnya:")
+            if not all_tables:
+                print("DEBUG: Sama sekali tidak ada tag <table> di halaman.")
+            else:
+                for i, t in enumerate(all_tables):
+                    print(f"  - Tabel #{i+1}: ID='{t.get('id')}', Class='{t.get('class')}'")
             return None
 
-        # Sekarang kita perlu parsing data dari string JavaScript.
-        # Kita asumsikan data dalam format array JSON.
-        # Contoh: var data = [["tanggal", "hari", "result_html"], ...];
-        
-        # Cari pola array 2D di dalam string
-        # Pola: [[...],[...],...] yang diikuti oleh ;
-        match = re.search(r'(\[\[.*?\]\])', target_script_content, re.DOTALL)
-        
-        if not match:
-            print(f"ERROR: Tidak dapat menemukan pola array data di dalam script.")
+        # Ambil baris pertama di dalam tbody (hasil terbaru)
+        tbody = table.find('tbody')
+        if not tbody:
+            print("ERROR: Tabel ditemukan, tetapi tidak memiliki tag <tbody>.")
             return None
             
-        data_string = match.group(1)
-        
-        # Ubah string menjadi list Python
-        # Ganti single quote dengan double quote agar valid JSON
-        data_string = data_string.replace("'", '"')
-        data_list = json.loads(data_string)
-        
-        if not data_list or len(data_list) == 0:
-            print(f"ERROR: Array data kosong.")
+        first_row = tbody.find('tr')
+        if not first_row:
+            print("ERROR: Tabel ditemukan, tetapi tidak ada baris data (<tr>) di dalam <tbody>.")
             return None
-            
-        # Ambil baris pertama (hasil terbaru)
-        first_row_data = data_list[0]
+
+        cells = first_row.find_all('td')
+        if len(cells) < 3:
+            print(f"ERROR: Struktur baris tidak sesuai, hanya menemukan {len(cells)} kolom.")
+            return None
+
+        # Ekstrak data
+        tanggal = cells[0].text.strip()
+        hari = cells[1].text.strip()
         
-        tanggal = first_row_data[0].strip()
-        hari = first_row_data[1].strip()
-        result_html = first_row_data[2]
-        
-        # Gunakan BeautifulSoup untuk mengekstrak angka dari HTML result
-        soup_result = BeautifulSoup(result_html, 'html.parser')
-        result_spans = soup_result.find_all('span', class_='bolaresultmodif')
-        
+        result_spans = cells[2].find_all('span', class_='bolaresultmodif')
         if not result_spans:
-            print(f"ERROR: Tag span result tidak ditemukan di data script.")
+            print("ERROR: Tag span dengan class 'bolaresultmodif' tidak ditemukan di kolom result.")
             return None
-            
+        
         angka_list = [span.text for span in result_spans]
         angka_str = ' '.join(angka_list)
 
         formatted_output = f"{tanggal} {hari} {angka_str}"
-        print(f"SUCCESS: Data berhasil di-scrape dari script: {formatted_output}")
+        print(f"SUCCESS: Data berhasil di-scrape dari tabel: {formatted_output}")
         return formatted_output
 
     except Exception as e:
-        print(f"ERROR: Terjadi error tak terduga saat scraping dari script: {e}")
+        print(f"ERROR: Terjadi error tak terduga saat scraping: {e}")
         traceback.print_exc()
         return None
 
@@ -162,8 +154,8 @@ if __name__ == "__main__":
                 scraper_type = source.get('scraper_type')
                 latest_data = None
 
-                if scraper_type == 'embedded_script':
-                    latest_data = scrape_embedded_script(source)
+                if scraper_type == 'static_table':
+                    latest_data = scrape_static_table(source)
                 else:
                     print(f"WARNING: Scraper type '{scraper_type}' tidak dikenal. Lewati.")
                     continue
