@@ -7,6 +7,7 @@ import yaml
 from bs4 import BeautifulSoup
 from github import Github
 import traceback
+import github.Auth
 
 # --- KONFIGURASI UTAMA ---
 CONFIG_FILE = "config.yml"
