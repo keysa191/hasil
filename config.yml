@@ -5,17 +5,17 @@
 
 # Konfigurasi untuk multiple data sources dengan data di dalam script
 
+# Konfigurasi untuk multiple data sources dengan data di HTML statis
+
 - name: "SDP"
   url: "https://srv1.scanangka.blog/keluaranharian?pasaran=sydney"
   target_file: "datasdp"
-  scraper_type: "embedded_script" # Tipe scraper baru
-  search_keyword: "sydney" # Kata kunci unik untuk menemukan script yang benar
+  scraper_type: "static_table" # Kembali ke tipe scraper HTML biasa
 
 - name: "HK"
   url: "https://srv1.scanangka.blog/keluaranharian?pasaran=hongkong"
   target_file: "datahkp"
-  scraper_type: "embedded_script"
-  search_keyword: "hongkong"
+  scraper_type: "static_table"
 
 # Untuk menambah sumber baru, cukup tambahkan blok dengan scraper_type "scanangka_api"
 # dan sesuaikan api_pasaran-nya.
