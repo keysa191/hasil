@@ -4,7 +4,7 @@ name: Daily Data Update
 # Menentukan kapan workflow ini akan dijalankan
 on:
   schedule:
-    - cron: '*/10 * * * *' # UJI COBA: Jalankan setiap 10 menit
+    - cron: '0 */8 * * *' # UJI COBA: Jalankan setiap 10 menit
   
   workflow_dispatch:
 
