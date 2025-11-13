@@ -17,6 +17,11 @@
   target_file: "datasg"
   scraper_type: "static_table"
 
+- name: "MQ18"
+  url: "https://srv1.scanangka.blog/keluaranharian?pasaran=morocco%20quatro%2018:00"
+  target_file: "mq18"
+  scraper_type: "static_table"
+
 - name: "HK"
   url: "https://srv1.scanangka.blog/keluaranharian?pasaran=hongkong"
   target_file: "datahkp"
