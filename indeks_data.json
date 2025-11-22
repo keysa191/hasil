@@ -4,6 +4,10 @@
     "nama": "Sidney Pools",
     "url": " https://raw.githubusercontent.com/keysa191/hasil/refs/heads/main/datasdp"
   },
+    {
+    "nama": "Sidney Lotto",
+    "url": " https://raw.githubusercontent.com/keysa191/hasil/refs/heads/main/sdlot"
+  },
   {
     "nama": "Singapore",
     "url": "https://raw.githubusercontent.com/keysa191/hasil/refs/heads/main/datasg"
@@ -19,6 +23,10 @@
   {
     "nama": "Hongkong Pools",
     "url": "https://raw.githubusercontent.com/keysa191/hasil/refs/heads/main/datahkp"
+  },
+  {
+    "nama": "Hongkong Lotto",
+    "url": "https://raw.githubusercontent.com/keysa191/hasil/refs/heads/main/hklot"
   },
    {
     "nama": "Morocco 00",
