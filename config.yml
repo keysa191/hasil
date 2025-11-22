@@ -10,7 +10,12 @@
 - name: "SDP"
   url: "https://srv1.scanangka.blog/keluaranharian?pasaran=sydney"
   target_file: "datasdp"
-  scraper_type: "static_table" # Kembali ke tipe scraper HTML biasa
+  scraper_type: "static_table" 
+
+- name: "SDL"
+  url: "https://srv1.scanangka.blog/keluaranharian?pasaran=sydney%20lotto"
+  target_file: "sdlot"
+  scraper_type: "static_table"
 
 - name: "SG"
   url: "https://srv1.scanangka.blog/keluaranharian?pasaran=singapore"
@@ -25,6 +30,11 @@
 - name: "HK"
   url: "https://srv1.scanangka.blog/keluaranharian?pasaran=hongkong"
   target_file: "datahkp"
+  scraper_type: "static_table"
+
+- name: "HKL"
+  url: "https://srv1.scanangka.blog/keluaranharian?pasaran=hongkong%20lotto"
+  target_file: "hklot"
   scraper_type: "static_table"
 
 - name: "mq21"
