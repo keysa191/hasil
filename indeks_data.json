@@ -31,6 +31,17 @@
    {
     "nama": "Morocco 00",
     "url": "https://raw.githubusercontent.com/keysa191/hasil/refs/heads/main/mq00"
+  },
+  {
+    "nama": "SGP Sabtu",
+    "url": "https://raw.githubusercontent.com/keysa191/hasil/refs/heads/main/sgsab"
+  },
+  {
+    "nama": "SGP Minggu",
+    "url": "https://raw.githubusercontent.com/keysa191/hasil/refs/heads/main/sgmin"
+  },
+  {
+    "nama": "SGP Rabu",
+    "url": "https://raw.githubusercontent.com/keysa191/hasil/refs/heads/main/sgrab"
   }
-  
 ]
