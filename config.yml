@@ -6,7 +6,16 @@
 # Konfigurasi untuk multiple data sources dengan data di dalam script
 
 # Konfigurasi untuk multiple data sources dengan data di HTML statis
+- name: "ore3"
+  url: "https://srv1.scanangka.blog/keluaranharian?pasaran=oregon%203"
+  target_file: "ore3"
+  scraper_type: "static_table" 
 
+- name: "ore4"
+  url: "https://srv1.scanangka.blog/keluaranharian?pasaran=oregon%204"
+  target_file: "ore4"
+  scraper_type: "static_table" 
+  
 - name: "SDP"
   url: "https://srv1.scanangka.blog/keluaranharian?pasaran=sydney"
   target_file: "datasdp"
