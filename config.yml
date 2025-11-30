@@ -63,17 +63,17 @@
 
 - name: "SG-Sabtu"
   url: "https://srv1.scanangka.blog/keluaranmingguan?pasaran=singapore&hari=sabtu"
-  target_file: "sgsab"
+  target_file: "sgsmr"
   scraper_type: "static_table" 
 
 - name: "SG-Minggu"
   url: "https://srv1.scanangka.blog/keluaranmingguan?pasaran=singapore&hari=minggu"
-  target_file: "sgmin"
+  target_file: "sgsmr"
   scraper_type: "static_table" 
 
 - name: "SG-Rabu"
   url: "https://srv1.scanangka.blog/keluaranmingguan?pasaran=singapore&hari=rabu"
-  target_file: "sgrab"
+  target_file: "sgsmr"
   scraper_type: "static_table" 
 
 # Untuk menambah sumber baru, cukup tambahkan blok dengan scraper_type "scanangka_api"
