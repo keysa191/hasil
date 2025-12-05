@@ -43,7 +43,7 @@
 
 - name: "HK"
   url: "https://srv1.scanangka.blog/keluaranharian?pasaran=hongkong"
-  target_file: "datahkp"
+  target_file: "hkp"
   scraper_type: "static_table"
 
 - name: "HKL"
